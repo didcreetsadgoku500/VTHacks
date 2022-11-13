@@ -15,7 +15,7 @@ import {
 } from "native-base";
 import {Image, ScrollView, View} from "native-base";
 import { useState, useEffect } from 'react';
-import {TeamIcon, LiveIndicator, TimeDisplay} from './components/MatchCards'
+import {TeamIcon, LiveIndicator, TimeDisplay, MatchCard} from './components/MatchCards'
 
 
 
@@ -29,7 +29,7 @@ const config = {
 export const theme = extendTheme({ config });
 
 export default function App() {
-  let abc = true
+  
   return (
     <NativeBaseProvider>
       <ScrollView
@@ -41,12 +41,28 @@ export default function App() {
           _light={{ bg: "blueGray.50" }}
           px={4}
           flex={1}>
-            {abc ? <HomepageMatchCards /> : <MatchDetails/>}
+            {/* {abc ? <HomepageMatchCards /> : <MatchDetails />} */}
+            <SceneManager value={0} />
        
         </Center>
       </ScrollView>
     </NativeBaseProvider>
   );
+}
+
+function SceneManager(props) {
+  const [scene, switchScene] = useState(props.value)
+
+  if (scene == 0) {
+    return <HomepageMatchCards />
+
+  }
+  if (scene == 1) {
+    return <MatchDetails />
+
+  }
+
+
 }
 
 function HomepageMatchCards(props) {
@@ -56,68 +72,33 @@ function HomepageMatchCards(props) {
   useEffect(() => {
     fetchInitialData()
     .then(objs => setData(objs))
-
+    setLoading(false)
 
   }, [])
 
   return <View marginBottom="10">
-    {data}
+    {isLoading ? <Text>Loading...</Text> : data}
 
   </View>
-
-
 }
+
+
+
 
 function MatchDetails(props) {
   return <View>
-    <Text>hi</Text>
+    <MatchCard isLive={false} team1={{"teamName": "South Korea", "logo": "https://osuflags.omkserver.nl/KR.png"}} team2={{"teamName": "Russia", "logo": "https://osuflags.omkserver.nl/RU.png"}} score1={0} score2={0}/>
      </View>
 
 }
 
 
-function MatchCard(props) {
-  const [score1, setScore1] = useState(props.score1)
-  const [score2, setScore2] = useState(props.score2)
 
-  if (props.isLive) {
-  setTimeout(() => {
-    updateScore(score1, setScore1, score2, setScore2)
-  }, 2000)}
-
-
-  return <NativeBaseProvider>
-      <Box bg="blueGray.200" py="4" px="3" borderRadius="5" rounded="md" maxWidth="100%" width="900" marginTop="10" shadow="3">
-        
-        <View flexDirection="row" justifyContent="space-between">
-           <TeamIcon value={props.team1.teamName} source={props.team1.logo}/>
-           <View flexDirection="row" justifyContent="space-between" width="70">
-           <Heading alignSelf="center">{score1}</Heading>
-           <Heading alignSelf="center">-</Heading>
-           <Heading alignSelf="center">{score2}</Heading>
-           </View>
-           <TeamIcon value={props.team2.teamName} source={props.team2.logo}/>
-        </View>
-        {props.isLive ? <LiveIndicator /> : <TimeDisplay time={props.timestamp} />}
-        
-      </Box>
-    </NativeBaseProvider>;
-}
-
-
-
-
-
-
-function updateScore(score1, setScore1, score2, setScore2) {
-  setScore1(score1 + 1);
-  setScore2(score2 + 1);
-}
 
 function fetchInitialData() {
   return new Promise((resolve, reject) => {
-    sampleFetchFunc('http://50.116.47.82/get_recent_matches')  //replace with fetch("query-api")
-   // .then(response => response.json())                //uncomment this when you actually fetch
+    fetch('http://50.116.47.82/get_recent_matches')  //replace with fetch("query-api")
+    .then(response => response.json())                //uncomment this when you actually fetch
     .then(data => {
       const objs = data.matches.map(match => <MatchCard key={match.matchID} isLive={false} team1={match.team1} team2={match.team2} score1={match.score1} score2={match.score2} timestamp={match.date}></MatchCard>)
       resolve(objs)
