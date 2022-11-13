@@ -13,10 +13,10 @@ import {
   Box,
   Button,
 } from "native-base";
-import NativeBaseIcon from "./components/NativeBaseIcon";
-import { Platform } from "react-native";
-import { Menu, HamburgerIcon, Pressable, Image, ScrollView, View} from "native-base";
+import {Image, ScrollView, View} from "native-base";
 import { useState, useEffect } from 'react';
+import {TeamIcon, LiveIndicator, TimeDisplay} from './components/MatchCards'
+
 
 
 // Define the config
@@ -29,20 +29,19 @@ const config = {
 export const theme = extendTheme({ config });
 
 export default function App() {
+  let abc = true
   return (
     <NativeBaseProvider>
       <ScrollView
         style={{ flex: 1}}
         scrollEnabled={true}
-        paddingTop="8">
+        marginTop="8">
         <Center
           _dark={{ bg: "blueGray.900" }}
           _light={{ bg: "blueGray.50" }}
           px={4}
           flex={1}>
-          
-            <MatchCard team1={{"name": "Germany", "icon": "DE"}} team2={{"name": "Russia", "icon": "RU"}} isLive={true}/>
-              
+            {abc ? <HomepageMatchCards /> : <MatchDetails/>}
        
         </Center>
       </ScrollView>
@@ -50,75 +49,142 @@ export default function App() {
   );
 }
 
-// Color Switch Component
-function ToggleDarkMode() {
-  const { colorMode, toggleColorMode } = useColorMode();
+function HomepageMatchCards(props) {
+  const [isLoading, setLoading] = useState(true)
+  const [data, setData] = useState([])
+  
+  useEffect(() => {
+    fetchInitialData()
+    .then(objs => setData(objs))
 
-  return (
-    <HStack space={2} alignItems="center">
-      <Text>Dark</Text>
-      <Switch
-        isChecked={colorMode === "light"}
-        onToggle={toggleColorMode}
-        aria-label={
-          colorMode === "light" ? "switch to dark mode" : "switch to light mode"
-        }
-      />
-      <Text>Light</Text>
-    </HStack>
-  );
+
+  }, [])
+
+  return <View marginBottom="10">
+    {data}
+
+  </View>
+
+
 }
 
+function MatchDetails(props) {
+  return <View>
+    <Text>hi</Text>
+     </View>
+
+}
+
+
 function MatchCard(props) {
-  const [score1, setScore1] = useState(0)
-  const [score2, setScore2] = useState(0)
+  const [score1, setScore1] = useState(props.score1)
+  const [score2, setScore2] = useState(props.score2)
 
-  // const getData=()=>{
-  //   fetch('https://reqres.in/api/unknown/2')
-  //   .then(response=>response.json())
-  //   .then(data=>setScore1(data.data.id));
-  // }
+  if (props.isLive) {
+  setTimeout(() => {
+    updateScore(score1, setScore1, score2, setScore2)
+  }, 2000)}
 
-  // useEffect(() => {getData()}, [])
-  setInterval(updateScore(setScore1, setScore2), 1000)
 
   return <NativeBaseProvider>
-      <Box bg="primary.100" py="4" px="3" borderRadius="5" rounded="md" maxWidth="100%" width="900">
+      <Box bg="blueGray.200" py="4" px="3" borderRadius="5" rounded="md" maxWidth="100%" width="900" marginTop="10" shadow="3">
         
         <View flexDirection="row" justifyContent="space-between">
-           <TeamIcon value={props.team1.name} source={"https://osuflags.omkserver.nl/" + props.team1.icon + ".png"}/>
+           <TeamIcon value={props.team1.teamName} source={props.team1.logo}/>
            <View flexDirection="row" justifyContent="space-between" width="70">
            <Heading alignSelf="center">{score1}</Heading>
+           <Heading alignSelf="center">-</Heading>
            <Heading alignSelf="center">{score2}</Heading>
            </View>
-           <TeamIcon value={props.team2.name} source={"https://osuflags.omkserver.nl/" + props.team2.icon + ".png"}/>
+           <TeamIcon value={props.team2.teamName} source={props.team2.logo}/>
         </View>
-        {props.isLive ? <LiveIndicator /> : null}
+        {props.isLive ? <LiveIndicator /> : <TimeDisplay time={props.timestamp} />}
         
       </Box>
     </NativeBaseProvider>;
 }
 
-function TeamIcon(props) {  
-  return <VStack flexDirection="column" alignItems="center">
-    <Heading size="md">{props.value}</Heading>
-      <Image source={{uri: props.source}} style={{width: 80, height: 80}} alt="Load failed" />
-    </VStack>;
+
+
+
+
+
+function updateScore(score1, setScore1, score2, setScore2) {
+  setScore1(score1 + 1);
+  setScore2(score2 + 1);
 }
 
-function LiveIndicator() {
-  return <View flexDirection="row" alignItems="center">
-    <Box width="3" height="3" rounded={100} bg="red.700"></Box>
-    <Text px="1" style={{fontStyle: "italic", color: "6A6C6E"}}>Live</Text>
-  </View>
+function fetchInitialData() {
+  return new Promise((resolve, reject) => {
+    sampleFetchFunc('http://50.116.47.82/get_recent_matches')  //replace with fetch("query-api")
+   // .then(response => response.json())                //uncomment this when you actually fetch
+    .then(data => {
+      const objs = data.matches.map(match => <MatchCard key={match.matchID} isLive={false} team1={match.team1} team2={match.team2} score1={match.score1} score2={match.score2} timestamp={match.date}></MatchCard>)
+      resolve(objs)
+
+    }) 
+
+  })
 
 }
 
 
-function updateScore(setScore1, setScore2) {
-  setScore1(Math.floor(Math.random() * 9))
-  setScore2(Math.floor(Math.random() * 9))
+
+
+
+
+
+
+
+
+function sampleFetchFunc(ignore) {
+  return new Promise((resolve, reject) => {resolve(sampleFetchData)})
+
 }
+
+
+const sampleFetchData = {
+  "matches": [
+    {
+      "matchID": 120823734,
+      "team1": {"teamName": "South Korea", "logo": "https://osuflags.omkserver.nl/KR.png"},
+      "team2": {"teamName": "Russia", "logo": "https://osuflags.omkserver.nl/RU.png"},
+      "score1": 6,
+      "score2": 4,
+      "date": "YOUR DATE OBJECT HERE",
+      "finished": false
+    },
+    {
+      "matchID": 29348566,
+      "team1": {"teamName": "USA", "logo": "https://osuflags.omkserver.nl/US.png"},
+      "team2": {"teamName": "Korea", "logo": "https://osuflags.omkserver.nl/KR.png"},
+      "score1": 6,
+      "score2": 3,
+      "date": "YOUR DATE OBJECT HERE",
+      "finished": true
+    },
+    {
+      "matchID": 97653456,
+      "team1": {"teamName": "Hong Kong", "logo": "https://osuflags.omkserver.nl/HK.png"},
+      "team2": {"teamName": "Ukraine", "logo": "https://osuflags.omkserver.nl/UA.png"},
+      "score1": 1,
+      "score2": 6,
+      "date": "YOUR DATE OBJECT HERE",
+      "finished": true
+    },
+    {
+      "matchID": 1,
+      "team1": {"teamName": "Hong Kong", "logo": "https://osuflags.omkserver.nl/HK.png"},
+      "team2": {"teamName": "Ukraine", "logo": "https://osuflags.omkserver.nl/UA.png"},
+      "score1": 1,
+      "score2": 6,
+      "date": "YOUR DATE OBJECT HERE",
+      "finished": true
+    }
+    
+  ]
+}
+
 //Layout:
 //VStack
 //  Team Name, image
@@ -127,3 +193,14 @@ function updateScore(setScore1, setScore2) {
 
 //Maybe make team-name/image combo its own element?
 //<TeamIcon value="Russia" source="https://osuflags.omkserver.nl/RU.png"/>
+
+
+
+
+  // const getData=()=>{
+  //   fetch('https://reqres.in/api/unknown/2')
+  //   .then(response=>response.json())
+  //   .then(data=>setScore1(data.data.id));
+  // }
+
+  // useEffect(() => {getData()}, [])
